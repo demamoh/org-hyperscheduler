@@ -1,30 +1,13 @@
 ;;; org-hyperscheduler.el --- UI (web) representation of org-agenda  -*- lexical-binding: t; -*-
 ;; Copyright © 2022 Dmitry Markushevich
 
+;; TODO: Add license.
+
 ;; Author: Dmitry Markushevich <dmitrym@gmail.com>
 ;; Keywords: org-mode, calendar
 ;; Version: 1.0
 ;; Package-Requires: ((emacs "27.1") (websocket "1.13"))
 ;; URL: https://github.com/dmitrym0/org-hyperscheduler
-
-
-;; This file is NOT part of GNU Emacs.
-
-;; This program is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
-;;
-;; This program is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;; GNU General Public License for more details.
-;;
-;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs; see the file COPYING.  If not, write to the
-;; Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
-;; Boston, MA 02110-1301, USA.
-
 
 ;;; Commentary:
 ;;
@@ -50,13 +33,11 @@
 
 (defcustom org-hyperscheduler-readonly-mode t
   "If true, the web interface becomes read only.
-In Read-only mode, changes to agenda entries can only be made from Emacs.
-In Read-write mode, changes can be made either in Emacs or in the web-interface.
-
-**NOTE** that for bidirectional changes to work each eligible agenda entry must have an ~org-id~.
-
-This org-id will be added automatically by org-hyperscheduler.  If you don't want org-hyperscheduler
-to modify your agenda entries, keep the read-only mode enabled."
+   In Read-only mode, changes to agenda entries can only be made from Emacs.
+   In Read-write mode, changes can be made either in Emacs or in the web-interface.
+   **NOTE** that for bidirectional changes to work each eligible agenda entry must have an ~org-id~.
+   This org-id will be added automatically by org-hyperscheduler. If you don't want org-hyperscheduler
+   to modify your agenda entries, keep the read-only mode enabled."
   :group 'org-hyperscheduler
   :type 'boolean)
 
@@ -67,13 +48,10 @@ to modify your agenda entries, keep the read-only mode enabled."
 
 (defcustom org-hyperscheduler-exclude-from-org-roam nil
   "In org-roam any entry with an :ID: property is treated like a node.
-This is not desirable for calendar entries in most cases.
-
-When this flag is set to true, org-hyperscheduler will insert a :ROAM_EXCLUDE:
-property to hide calendar entries from org-roam.
-
-Read-only mode (org-hyperscheduler-readonly-mode) needs to be disabled for
-this setting to take effect."
+   This is not desirable for calendar entries in most cases.
+   When this flag is set to true, org-hyperscheduler will insert a :ROAM_EXCLUDE:
+   property to hide calendar entries from org-roam. Read-only mode
+   (org-hyperscheduler-readonly-mode) needs to be disabled for this setting to take effect."
   :group 'org-hyperscheduler
   :type 'boolean)
 
@@ -117,7 +95,7 @@ this setting to take effect."
 
 (defun org-hyperscheduler--ws-on-message (_ws frame)
   "Functions to run when the server receives a message.
-Takes _WS and FRAME as arguments."
+   Takes _WS and FRAME as arguments."
   (let* ((msg (json-parse-string
                (websocket-frame-text frame) :object-type 'alist))
          (command (alist-get 'command msg))
@@ -170,7 +148,7 @@ Takes _WS and FRAME as arguments."
 
 
 (defun org-hyperscheduler--encode-agenda ()
-  "Encode our agenda to JSON."
+  "Encode our agenda to JSON"
   ;; want json-encode-array here in case we get an empty list. then we want "[]"
   (json-encode-array (org-hyperscheduler-get-calendar-entries 'agenda)))
 
@@ -215,7 +193,8 @@ Takes _WS and FRAME as arguments."
 
 (defun org-hyperscheduler-get-js-date-pair ()
   "Convert from org timestamp to the format that TUI.calendar expects."
-  (let* ((plist (car (cdr (org-element-property :scheduled  (org-element-at-point)))))
+  (let* ((plist (car (cdr (org-element-property :deadline  (org-element-at-point)))))
+         (print plist)
          (plist (or plist (car (cdr (org-timestamp-from-string (org-entry-get nil "TIMESTAMP"))))))
          (year-start (plist-get plist :year-start))
          (month-start (plist-get plist :month-start))
@@ -227,9 +206,15 @@ Takes _WS and FRAME as arguments."
          (day-end (plist-get plist :day-end))
          (hour-end (plist-get plist :hour-end))
          (minute-end (plist-get plist :minute-end))
-         (start (org-hyperscheduler-date-time-to-iso8601-js-like  0 minute-start hour-start day-start month-start year-start))
-         (end (org-hyperscheduler-date-time-to-iso8601-js-like  0 minute-end hour-end day-end month-end year-end) )
          (all-day (if (eq hour-start nil) "true" "false"))
+         (start
+                (if (eq "true" all-day)
+                        (org-hyperscheduler-date-time-to-iso8601-js-like  0 0 0 day-start month-start year-start)
+                        (org-hyperscheduler-date-time-to-iso8601-js-like  0 minute-start hour-start day-start month-start year-start)))
+          (end
+                (if (eq "true" all-day)
+                        (org-hyperscheduler-date-time-to-iso8601-js-like  0 0 0 day-start month-start year-start)
+                        (org-hyperscheduler-date-time-to-iso8601-js-like  0 minute-end hour-end day-end month-end year-end)))
          (combined `((startDate . ,start) ( endDate . ,end) (allDay . ,all-day))))
     combined))
 
@@ -254,7 +239,7 @@ Takes _WS and FRAME as arguments."
 
 (defun org-hyperscheduler-schedule-at-point (timestamp)
   "Schedule a heading at point with a given TIMESTAMP."
-  (org-schedule nil timestamp))
+  (org-deadline nil timestamp))
 
 (defvar org-hyperscheduler-root-dir
   (concat (file-name-directory
@@ -274,3 +259,4 @@ Takes _WS and FRAME as arguments."
 (provide 'org-hyperscheduler)
 
 ;;; org-hyperscheduler.el ends here
+
