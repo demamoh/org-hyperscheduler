@@ -25,6 +25,7 @@
 ;; ---------------------------------------------------------------------------------------------------
 ;; options
 
+;; TODO modifications to handle a wide variety of scheduled cases and just quick events
 (defgroup org-hyperscheduler nil
   "org-hyperscheduler"
   :group 'org-hyperscheduler
